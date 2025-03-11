@@ -44,8 +44,31 @@ def identify_departments_high_satisfaction(df):
     # 2. Calculate the percentage of such employees within each department.
     # 3. Identify departments where this percentage exceeds 50%.
     # 4. Return the result DataFrame.
-
-    pass  # Remove this line after implementing the function
+    # Filter employees with SatisfactionRating > 4 and EngagementLevel == 'High'
+    high_satisfaction_df = df.filter((col("SatisfactionRating") > 4) & (col("EngagementLevel") == "High"))
+    
+    # Count total employees per department
+    total_counts = df.groupBy("Department").agg(count("EmployeeID").alias("TotalEmployees"))
+    
+    # Count high satisfaction employees per department
+    high_satisfaction_counts = high_satisfaction_df.groupBy("Department").agg(count("EmployeeID").alias("HighSatisfactionCount"))
+    
+    # Join both counts
+    department_stats = total_counts.join(high_satisfaction_counts, "Department", "left").fillna(0)
+    
+    # Calculate percentage of high satisfaction employees
+    result_df = department_stats.withColumn(
+        "HighSatisfactionPercentage",
+        spark_round((col("HighSatisfactionCount") / col("TotalEmployees")) * 100, 2)
+    )
+    
+    # Filter departments with more than 50% high satisfaction employees
+    result_df = result_df.filter(col("HighSatisfactionPercentage") > 50)
+    
+    # Select relevant columns
+    result_df = result_df.select("Department", "HighSatisfactionPercentage")
+    
+    return result_df
 
 def write_output(result_df, output_path):
     """
@@ -68,8 +91,8 @@ def main():
     spark = initialize_spark()
     
     # Define file paths
-    input_file = "/workspaces/Employee_Engagement_Analysis_Spark/input/employee_data.csv"
-    output_file = "/workspaces/Employee_Engagement_Analysis_Spark/outputs/task1/departments_high_satisfaction.csv"
+    input_file = "/workspaces/spark-structured-api-employee-engagement-analysis-samhithdara/input/employee_data.csv"
+    output_file = "/workspaces/spark-structured-api-employee-engagement-analysis-samhithdara/outputs/task1/departments_high_satisfaction.csv"
     
     # Load data
     df = load_data(spark, input_file)
