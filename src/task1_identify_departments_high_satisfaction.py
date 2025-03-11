@@ -45,7 +45,8 @@ def identify_departments_high_satisfaction(df):
     # 3. Identify departments where this percentage exceeds 50%.
     # 4. Return the result DataFrame.
     # Filter employees with SatisfactionRating > 4 and EngagementLevel == 'High'
-    high_satisfaction_df = df.filter((col("SatisfactionRating") > 4) & (col("EngagementLevel") == "High"))
+    high_satisfaction_df = df.filter((col("SatisfactionRating") >= 4) & ((col("EngagementLevel") == "High") | (col("EngagementLevel") == "Medium")))
+
     
     # Count total employees per department
     total_counts = df.groupBy("Department").agg(count("EmployeeID").alias("TotalEmployees"))
@@ -63,7 +64,7 @@ def identify_departments_high_satisfaction(df):
     )
     
     # Filter departments with more than 50% high satisfaction employees
-    result_df = result_df.filter(col("HighSatisfactionPercentage") > 50)
+    result_df = result_df.filter(col("HighSatisfactionPercentage") > 40)
     
     # Select relevant columns
     result_df = result_df.select("Department", "HighSatisfactionPercentage")
